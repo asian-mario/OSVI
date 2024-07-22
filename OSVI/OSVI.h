@@ -92,7 +92,7 @@ namespace OSVI {
             json << "\"pid\":0,";
             json << "\"tid\":" << result.ThreadID << ",";
             json << "\"ts\":" << GetTimestamp() << ",";
-            json << "\"args\":{\"size\":" << result.Size << ",\"file\":\"" << result.File << "\",\"line\":" << result.Line << "}";
+            json << "\"args\":{\"size\":" << result.Size << ",\"file\":\"" << EscapeJsonString(result.File) << "\",\"line\":" << result.Line << "}";
             json << "}";
 
             outputStream << json.str();
@@ -130,6 +130,23 @@ namespace OSVI {
         void WriteFooter() {
             outputStream << "]}";
             outputStream.flush();
+        }
+
+        std::string EscapeJsonString(const std::string& str) {
+            std::ostringstream oss;
+            for (char c : str) {
+                switch (c) {
+                case '"':  oss << "\\\""; break;
+                case '\\': oss << "\\\\"; break;
+                case '\b': oss << "\\b"; break;
+                case '\f': oss << "\\f"; break;
+                case '\n': oss << "\\n"; break;
+                case '\r': oss << "\\r"; break;
+                case '\t': oss << "\\t"; break;
+                default:   oss << c; break;
+                }
+            }
+            return oss.str();
         }
 
         std::mutex mutex;
