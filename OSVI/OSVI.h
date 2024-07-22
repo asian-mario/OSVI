@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <cstdlib>
+#include <stdexcept>
 
 // Profiling macros
 #define OSVI_PROFILE_BEGIN_SESSION(name, filepath) ::OSVI::Profiler::Get().BeginSession(name, filepath)
@@ -44,17 +45,26 @@ namespace OSVI {
 
         void BeginSession(const std::string& name, const std::string& filepath) {
             std::lock_guard<std::mutex> lock(mutex);
+            if (currentSession) {
+                EndSession();
+            }
+            LoadPreviousSession(filepath);
             outputStream.open(filepath);
+            if (!outputStream.is_open()) {
+                throw std::runtime_error("Could not open output file.");
+            }
             WriteHeader();
             currentSession = new Session{ name };
         }
 
         void EndSession() {
             std::lock_guard<std::mutex> lock(mutex);
-            WriteFooter();
-            outputStream.close();
-            delete currentSession;
-            currentSession = nullptr;
+            if (currentSession) {
+                WriteFooter();
+                outputStream.close();
+                delete currentSession;
+                currentSession = nullptr;
+            }
         }
 
         void WriteProfile(const ProfileResult& result) {
@@ -76,6 +86,9 @@ namespace OSVI {
 
             outputStream << json.str();
             outputStream.flush();
+
+            // Store the result for comparison
+            currentResults[result.Name] = result.End - result.Start;
         }
 
         void WriteMemoryProfile(const MemoryProfileResult& result) {
@@ -115,6 +128,66 @@ namespace OSVI {
             return time.count();
         }
 
+        void LoadPreviousSession(const std::string& filepath) {
+            std::ifstream infile(filepath);
+            if (infile.good()) {
+                std::string line;
+                while (std::getline(infile, line)) {
+                    auto pos = line.find("\"dur\":");
+                    if (pos != std::string::npos) {
+                        auto name_start = line.find("\"name\":\"") + 8;
+                        auto name_end = line.find("\"", name_start);
+                        std::string name = line.substr(name_start, name_end - name_start);
+
+                        auto dur_start = pos + 6;
+                        auto dur_end = line.find(",", dur_start);
+                        long long duration = std::stoll(line.substr(dur_start, dur_end - dur_start));
+
+                        previousResults[name] = duration;
+                    }
+                }
+            }
+        }
+
+        void CompareSessions() {
+            std::lock_guard<std::mutex> lock(mutex);
+
+            std::ofstream comparisonStream("comparison.json");
+            if (!comparisonStream.is_open()) {
+                throw std::runtime_error("Could not open comparison file.");
+            }
+            comparisonStream << "{\n\"comparison\": [\n";
+
+            bool first = true;
+            for (const auto& entry : currentResults) {
+                const std::string& name = entry.first;
+                long long currentDuration = entry.second;
+
+                if (!first) {
+                    comparisonStream << ",\n";
+                }
+                first = false;
+
+                comparisonStream << "{\n";
+                comparisonStream << "\"name\": \"" << name << "\",\n";
+                comparisonStream << "\"current_duration\": " << currentDuration << ",\n";
+
+                if (previousResults.find(name) != previousResults.end()) {
+                    comparisonStream << "\"previous_duration\": " << previousResults[name] << ",\n";
+                    comparisonStream << "\"difference\": " << (currentDuration - previousResults[name]) << "\n";
+                }
+                else {
+                    comparisonStream << "\"previous_duration\": \"N/A\",\n";
+                    comparisonStream << "\"difference\": \"N/A\"\n";
+                }
+
+                comparisonStream << "}";
+            }
+
+            comparisonStream << "\n]\n}";
+            comparisonStream.close();
+        }
+
     private:
         struct Session {
             std::string Name;
@@ -130,6 +203,7 @@ namespace OSVI {
         void WriteFooter() {
             outputStream << "]}";
             outputStream.flush();
+            CompareSessions();
         }
 
         std::string EscapeJsonString(const std::string& str) {
@@ -153,6 +227,9 @@ namespace OSVI {
         std::ofstream outputStream;
         Session* currentSession;
         int profileCount;
+
+        std::map<std::string, long long> previousResults;
+        std::map<std::string, long long> currentResults;
     };
 
     class ProfileTimer {
