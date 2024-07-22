@@ -15,12 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="example.cpp">
+    <ClCompile Include="OSVI\runtime_example.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OSVI\memory_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OSVI.h">
+    <ClInclude Include="OSVI\OSVI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

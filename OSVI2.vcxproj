@@ -127,10 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="example.cpp" />
+    <ClCompile Include="OSVI\memory_example.cpp" />
+    <ClCompile Include="OSVI\runtime_example.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OSVI.h" />
+    <ClInclude Include="OSVI\OSVI.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
