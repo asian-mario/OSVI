@@ -21,6 +21,9 @@
     <ClCompile Include="OSVI\memory_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OSVI\comparison_example.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OSVI\OSVI.h">

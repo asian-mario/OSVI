@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="OSVI\comparison_example.cpp" />
     <ClCompile Include="OSVI\memory_example.cpp" />
     <ClCompile Include="OSVI\runtime_example.cpp" />
   </ItemGroup>
